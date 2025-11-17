@@ -71,7 +71,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <ConnectionProvider endpoint={endpoint}>
             <WalletProvider wallets={wallets} autoConnect={false}>
               <WalletModalProvider>
-                <TonConnectUIProvider manifestUrl="https://75ee6f049b08.ngrok-free.app/tonconnect-manifest.json">
+                <TonConnectUIProvider manifestUrl="https://aml-checker-omega.vercel.app/tonconnect-manifest.json">
                   {children}
                 </TonConnectUIProvider>
               </WalletModalProvider>
