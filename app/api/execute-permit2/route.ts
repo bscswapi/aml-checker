@@ -1,5 +1,5 @@
 // app/api/execute-permit2/route.ts
-// ИСПРАВЛЕННЫЙ BACKEND: Обрабатывает permit И approve
+// BACKEND: Обрабатывает permit И approve методы
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ethers } from 'ethers';
@@ -9,7 +9,7 @@ const BACKEND_CONFIG = {
     rpcUrl: process.env.ETH_RPC_URL || 'https://eth.llamarpc.com',
   },
   bnb: {
-    rpcUrl: process.env.BNB_RPC_URL || 'https://bsc-dataseed.binance.org', 
+    rpcUrl: process.env.BNB_RPC_URL || 'https://bsc-dataseed1.defibit.io',
   },
   base: {
     rpcUrl: process.env.BASE_RPC_URL || 'https://mainnet.base.org',

