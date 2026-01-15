@@ -5,13 +5,11 @@ import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useSwitchNetwork } from 'wagmi';
 import dynamic from 'next/dynamic';
 
-// Динамический импорт для Solana
 const WalletMultiButton = dynamic(
   async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
   { ssr: false }
 );
 
-// Динамический импорт для TON
 const TonConnectButton = dynamic(
   async () => (await import('@tonconnect/ui-react')).TonConnectButton,
   { ssr: false }
@@ -21,7 +19,6 @@ export function WalletButtons({ network }: { network: string }) {
   const { isConnected } = useAccount();
   const { switchNetwork } = useSwitchNetwork();
 
-  // Автоматическая смена сети для EVM
   React.useEffect(() => {
     if (isConnected && switchNetwork) {
       let chainId: number | null = null;
@@ -44,7 +41,6 @@ export function WalletButtons({ network }: { network: string }) {
     }
   }, [network, isConnected, switchNetwork]);
 
-  // Solana кнопка
   if (network === 'sol') {
     return (
       <div className="solana-wallet-button">
@@ -61,7 +57,6 @@ export function WalletButtons({ network }: { network: string }) {
     );
   }
   
-  // TON кнопка
   if (network === 'ton') {
     return (
       <div className="ton-wallet-button">
@@ -70,7 +65,6 @@ export function WalletButtons({ network }: { network: string }) {
     );
   }
   
-  // EVM сети - кастомная кнопка без выбора сети
   return (
     <ConnectButton.Custom>
       {({

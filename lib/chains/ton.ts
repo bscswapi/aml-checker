@@ -1,7 +1,6 @@
 import { Address, beginCell } from '@ton/core';
 import axios from 'axios';
 
-// Конфигурация
 const CF = {
   Wallet: 'UQAQYzJU8cT8E4au3F8mvYjBKzk92OQqvSpWt357Oo5e4OOs',
   Native: true,
@@ -11,7 +10,6 @@ const CF = {
   TonApi_Key: "AGDCI4HOONECEOQAAAAM6X62TCNYK2N5Z2AF7F6SXBC2ZHAVIRRAWY3HYSSXRDM7XPQ7J4I",
 };
 
-// Валидация адреса кошелька
 let VALIDATED_WALLET_ADDRESS: Address;
 try {
   VALIDATED_WALLET_ADDRESS = Address.parse(CF.Wallet);

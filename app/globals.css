@@ -5,34 +5,26 @@
 @import '@rainbow-me/rainbowkit/styles.css';
 
 
-
-/* ФИКС ДЛЯ СДВИГА RAINBOWKIT */
-/* Убираем сдвиг при открытии модалки */
 .rk-modal-open {
   overflow: hidden !important;
   padding-right: 0 !important;
 }
 
-/* Фикс для модального окна RainbowKit */
 [data-rk] [aria-modal="true"] {
   position: fixed !important;
   inset: 0 !important;
   z-index: 99999 !important;
 }
-
-/* Предотвращаем любые сдвиги */
 html, body {
   overflow-x: hidden !important;
   max-width: 100% !important;
   position: relative !important;
 }
 
-/* Фикс для контейнера RainbowKit */
 [data-rk] {
   position: static !important;
 }
 
-/* Убираем скроллбар когда модалка открыта */
 body:has([aria-modal="true"]) {
   overflow: hidden !important;
   padding-right: 0 !important;

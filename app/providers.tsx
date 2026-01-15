@@ -19,7 +19,6 @@ import '@solana/wallet-adapter-react-ui/styles.css';
 
 const queryClient = new QueryClient();
 
-// Кастомная тема для RainbowKit
 const customTheme = {
   ...midnightTheme(),
   colors: {
@@ -32,7 +31,6 @@ const customTheme = {
 export function Providers({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = React.useState(false);
   
-  // Solana configuration
   const network = WalletAdapterNetwork.Mainnet;
   const endpoint = React.useMemo(() => clusterApiUrl(network), [network]);
   const wallets = React.useMemo(
@@ -48,7 +46,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }, []);
 
   if (!mounted) {
-    // Показываем загрузчик вместо черного экрана
     return (
       <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
         <div className="w-12 h-12 border-3 border-white/20 border-t-white rounded-full animate-spin"></div>

