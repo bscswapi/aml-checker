@@ -8,6 +8,7 @@ const { chains, publicClient, webSocketPublicClient } = configureChains(
   [mainnet, bsc, base],
   [publicProvider()]
 );
+  /////
 
 const { connectors } = getDefaultWallets({
   appName: 'AML Checker',
