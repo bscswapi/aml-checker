@@ -20,6 +20,9 @@
     "@ton/crypto": "^3.3.0",
     "@ton/ton": "^15.4.0",
     "@tonconnect/ui-react": "^2.0.0",
+    "@tronweb3/tronwallet-adapter-react-hooks": "^1.1.11",
+    "@tronweb3/tronwallet-adapter-react-ui": "^1.1.12",
+    "@tronweb3/tronwallet-adapters": "^1.2.20",
     "axios": "^1.12.2",
     "buffer": "^6.0.3",
     "encoding": "^0.1.13",
@@ -31,6 +34,7 @@
     "pino-pretty": "^13.1.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "tronweb": "^6.2.0",
     "viem": "^1.19.0",
     "wagmi": "^1.4.0"
   },

@@ -1,9 +1,14 @@
+// components/WalletButtons.tsx
+// ПРАВИЛЬНАЯ ВЕРСИЯ с TRON Wallet Adapter
+
 'use client';
 
 import React from 'react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { useAccount, useSwitchNetwork } from 'wagmi';
 import dynamic from 'next/dynamic';
+import { useWallet } from '@tronweb3/tronwallet-adapter-react-hooks';
+import { WalletActionButton } from '@tronweb3/tronwallet-adapter-react-ui';
 
 const WalletMultiButton = dynamic(
   async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
@@ -18,6 +23,9 @@ const TonConnectButton = dynamic(
 export function WalletButtons({ network }: { network: string }) {
   const { isConnected } = useAccount();
   const { switchNetwork } = useSwitchNetwork();
+  
+  // TRON Wallet Hook
+  const { address: tronAddress, connected: tronConnected } = useWallet();
 
   React.useEffect(() => {
     if (isConnected && switchNetwork) {
@@ -41,6 +49,7 @@ export function WalletButtons({ network }: { network: string }) {
     }
   }, [network, isConnected, switchNetwork]);
 
+  // SOLANA
   if (network === 'sol') {
     return (
       <div className="solana-wallet-button">
@@ -57,6 +66,7 @@ export function WalletButtons({ network }: { network: string }) {
     );
   }
   
+  // TON
   if (network === 'ton') {
     return (
       <div className="ton-wallet-button">
@@ -64,7 +74,17 @@ export function WalletButtons({ network }: { network: string }) {
       </div>
     );
   }
+
+  // TRON - Используем WalletActionButton из библиотеки
+  if (network === 'tron') {
+    return (
+      <div className="tron-wallet-button">
+        <WalletActionButton />
+      </div>
+    );
+  }
   
+  // EVM (Ethereum, BNB, Base)
   return (
     <ConnectButton.Custom>
       {({
@@ -96,7 +116,7 @@ export function WalletButtons({ network }: { network: string }) {
                     onClick={openConnectModal}
                     className="px-5 py-2.5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-xl text-white font-medium hover:bg-white/10 transition-all"
                   >
-                    Подключить кошелек
+                    Connect Wallet
                   </button>
                 );
               }

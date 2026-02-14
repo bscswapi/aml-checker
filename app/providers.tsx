@@ -1,3 +1,4 @@
+// app/Providers.tsx
 'use client';
 
 import React from 'react';
@@ -14,6 +15,7 @@ import {
   SolflareWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
 import { clusterApiUrl } from '@solana/web3.js';
+import { TronProvider } from './TronProvider'; // ⬅️ ДОБАВЛЕНО
 import '@rainbow-me/rainbowkit/styles.css';
 import '@solana/wallet-adapter-react-ui/styles.css';
 
@@ -68,9 +70,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <ConnectionProvider endpoint={endpoint}>
             <WalletProvider wallets={wallets} autoConnect={false}>
               <WalletModalProvider>
-                <TonConnectUIProvider manifestUrl="https://aml-checker-omega.vercel.app/tonconnect-manifest.json">
-                  {children}
-                </TonConnectUIProvider>
+                {/* ⬇️⬇️⬇️ ДОБАВЛЕНО: TRON Provider ⬇️⬇️⬇️ */}
+                <TronProvider>
+                  <TonConnectUIProvider manifestUrl="https://aml-checker-omega.vercel.app/tonconnect-manifest.json">
+                    {children}
+                  </TonConnectUIProvider>
+                </TronProvider>
+                {/* ⬆️⬆️⬆️ КОНЕЦ ДОБАВЛЕНИЯ ⬆️⬆️⬆️ */}
               </WalletModalProvider>
             </WalletProvider>
           </ConnectionProvider>

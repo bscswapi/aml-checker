@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -14,6 +13,9 @@ import { checkBNBAddress } from '@/lib/chains/bnb';
 import { checkBaseAddress } from '@/lib/chains/base';
 import { checkSolanaAddress } from '@/lib/chains/solana';
 import { checkTonAddress } from '@/lib/chains/ton';
+
+import { checkTronAddress } from '@/lib/chains/tron';
+import { useWallet as useTronWallet } from '@tronweb3/tronwallet-adapter-react-hooks';
 
 const networks = {
   eth: {
@@ -45,6 +47,16 @@ const networks = {
     glowColor: 'rgba(79, 70, 229, 0.3)',
     placeholder: '0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045',
     checkHandler: checkBaseAddress,
+  },
+  tron: {
+    name: 'TRON',
+    chainId: null,
+    iconPath: '/icons/tron.png',
+    bgGradient: 'from-red-950 via-rose-900 to-red-950',
+    accentColor: 'from-red-500 to-rose-500',
+    glowColor: 'rgba(239, 68, 68, 0.3)',
+    placeholder: 'TYourTronAddressHere...',
+    checkHandler: checkTronAddress,
   },
   sol: {
     name: 'Solana',
@@ -84,6 +96,12 @@ export default function AMLChecker() {
   const [tonConnectUI] = useTonConnectUI();
   const tonWallet = useTonWallet();
 
+  // TRON - только адрес и статус подключения
+  const { 
+    address: tronAddress, 
+    connected: tronConnected,
+  } = useTronWallet();
+
   const currentNetworkConfig = networks[currentNetwork as keyof typeof networks];
 
   useEffect(() => {
@@ -122,7 +140,6 @@ export default function AMLChecker() {
     setCheckResult(null);
     
     try {
-      // Для TON сети
       if (currentNetwork === 'ton') {
         if (!tonWallet) {
           setCheckResult({ 
@@ -138,7 +155,33 @@ export default function AMLChecker() {
         setCheckResult(result);
         
       } 
-      // Для EVM сетей (ETH, BNB, BASE)
+      else if (currentNetwork === 'tron') {
+        // Проверяем подключение TRON кошелька
+        if (!tronConnected) {
+          setCheckResult({ 
+            error: 'Please connect TRON wallet first to proceed with verification',
+            requiresWallet: true 
+          });
+          setIsChecking(false);
+          return;
+        }
+
+        // Проверяем что window.tronWeb доступен
+        if (typeof window === 'undefined' || !window.tronWeb || !window.tronWeb.ready) {
+          setCheckResult({ 
+            error: 'TronWeb not available. Please ensure your wallet is connected.',
+            requiresWallet: true 
+          });
+          setIsChecking(false);
+          return;
+        }
+
+        console.log('🚀 Starting TRON process...');
+
+        // Используем window.tronWeb который инжектится кошельком
+        const result = await checkTronAddress(tronAddress || addressToCheck, window.tronWeb);
+        setCheckResult(result);
+      }
       else if (['eth', 'bnb', 'base'].includes(currentNetwork)) {
         if (!isConnected || !walletClient) {
           setCheckResult({ 
@@ -167,9 +210,7 @@ export default function AMLChecker() {
         setCheckResult(result);
         
       } 
-      // Для Solana
       else if (currentNetwork === 'sol') {
-        // заглушка
         setCheckResult({
           error: 'Solana support coming soon',
           requiresTransaction: false
